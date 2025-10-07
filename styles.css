@@ -1,0 +1,17 @@
+:root { --bg: #0b1020; --card: #131a33; --accent: #5dd6ff; --text: #e8f2ff; }
+*{ box-sizing: border-box; }
+body{ margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; background:var(--bg); color:var(--text);} 
+.container{ max-width: 480px; margin: 24px auto; padding: 16px; background: var(--card); border-radius: 16px; box-shadow: 0 8px 40px rgb(0 0 0 / 40%);} 
+h1{ margin: 8px 0 16px; font-weight: 700; text-align:center; }
+#wheel{ display:block; margin: 0 auto 12px; background: #0a0f23; border-radius: 50%; box-shadow: inset 0 0 24px rgba(255,255,255,.06), 0 8px 24px rgba(0,0,0,.6);} 
+.controls{ display:flex; flex-direction:column; gap:12px; }
+.row{ display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; }
+input{ width: 140px; padding:8px 10px; border-radius: 10px; border:1px solid #2a355f; background:#0b1330; color:var(--text);} 
+button{ padding:10px 14px; border:none; border-radius: 10px; background:#1b274e; color:var(--text); cursor:pointer; transition: transform .06s ease; }
+button:hover{ transform: translateY(-1px); }
+button:active{ transform: translateY(1px); }
+.mult{ background:#11204a; }
+.mult.active{ outline:2px solid var(--accent); background:#10345a; }
+#spinBtn{ background: linear-gradient(135deg, #2452a6, #3db5ff); font-weight:700; }
+#betBtn{ background:#233365; }
+#status{ text-align:center; min-height: 20px; opacity:.9; }
