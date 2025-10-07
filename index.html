@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wheel WebApp</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>🎡 Wheel</h1>
+    <canvas id="wheel" width="360" height="360"></canvas>
+
+    <div class="controls">
+      <div class="row">
+        <label>Сумма</label>
+        <input id="amount" type="number" min="1" step="1" value="50" />
+      </div>
+      <div class="row">
+        <button class="mult" data-mult="x2">x2</button>
+        <button class="mult" data-mult="x3">x3</button>
+        <button class="mult" data-mult="x5">x5</button>
+        <button class="mult" data-mult="x50">x50</button>
+      </div>
+      <div class="row">
+        <button id="spinBtn">КРУТИТЬ</button>
+        <button id="betBtn">СДЕЛАТЬ СТАВКУ</button>
+      </div>
+      <div id="status"></div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
