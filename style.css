@@ -1,0 +1,27 @@
+:root{
+  --bg:#0b0f1b; --panel:#11182e; --ring:#0f1838; --ink:#eaf2ff;
+  --blue:#4aa3ff; --blue2:#1b5bd6;
+  --green:#34d399; --yellow:#facc15; --pink:#e879f9;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.wrap{display:flex;flex-direction:column;gap:18px;align-items:center;padding:18px}
+.card{position:relative;background:linear-gradient(180deg,#0e1430,#0a1026);border-radius:24px;padding:18px;box-shadow:0 12px 48px rgba(0,0,0,.45)}
+#wheel{display:block;border-radius:50%;box-shadow:inset 0 0 40px rgba(255,255,255,.06),0 20px 60px rgba(0,0,0,.6)}
+.pointer{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:24px solid var(--pink)}
+.center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.subtitle{opacity:.9;color:#d8e2ff;font-weight:600;letter-spacing:.2px}
+.timer{margin-top:6px;font-size:72px;line-height:1.05;text-align:center;font-weight:800}
+.timer small{font-size:22px;opacity:.9}
+.panel{width:540px;background:var(--panel);border:1px solid #1a2550;border-radius:12px;padding:12px}
+.bank{margin-bottom:8px}
+.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:240px;overflow:auto}
+.list li{display:flex;justify-content:space-between;gap:10px;padding:8px 10px;background:#0f1633;border:1px solid #1b2a5a;border-radius:10px}
+.controls .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.controls input{width:110px;padding:8px;border-radius:8px;border:1px solid #2a3666;background:#0d1433;color:var(--ink)}
+button{cursor:pointer;border:1px solid #233060;background:#16224b;color:var(--ink);padding:10px 14px;border-radius:10px}
+.mults{display:flex;gap:6px}
+.mult{background:#102049}
+.mult.active{outline:2px solid var(--blue)}
+.res-x2{color:#a8f1ff}.res-x3{color:#7ed2ff}.res-x5{color:#66ffad}.res-x50{color:#ffd966}
