@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Wheel — Global 30s (54 sectors)</title>
+  <link rel="stylesheet" href="./style.css" />
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script defer src="./config.js"></script>
+  <script defer src="./script.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Wheel — Global 30s (54 sectors)</h1>
+    <div id="status"></div>
+  </header>
+
+  <main>
+    <section class="wheel-section">
+      <div class="wheel-wrap">
+        <div id="wheel"></div>
+        <div class="pointer"></div>
+        <div class="wheel-center">
+          <div id="center-text">Before the game starts</div>
+          <div id="center-timer">30</div>
+          <div id="center-sub">seconds</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="info">
+      <div>Банк: <span id="bank">0</span></div>
+      <div class="payouts">
+        Коэфф.: <span class="chip yellow">x5</span>
+        <span class="chip blue">x2</span>
+        <span class="chip green">x3</span>
+        <span class="chip red">x50</span>
+      </div>
+    </section>
+
+    <section class="bet">
+      <div class="controls">
+        <input id="amount" type="number" min="1" step="1" value="10" />
+        <button data-color="yellow" class="btn yellow">Жёлтый</button>
+        <button data-color="blue" class="btn blue">Синий</button>
+        <button data-color="green" class="btn green">Зелёный</button>
+        <button data-color="red" class="btn red">Красный</button>
+      </div>
+      <button id="makeBet" class="primary">Сделать ставку</button>
+    </section>
+
+    <section class="round">
+      <h3>История раундов</h3>
+      <div id="history" class="history-bar"></div>
+    </section>
+
+    <section class="bets">
+      <h3>Ставки текущего раунда</h3>
+      <ul id="bets"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <small>© Wheelbot demo</small>
+  </footer>
+</body>
+</html>
