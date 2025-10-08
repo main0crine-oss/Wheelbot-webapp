@@ -1,0 +1,46 @@
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;color:#eee;background:#1f1f21}
+header{padding:16px;background:#161618;border-bottom:1px solid #2a2a2d}
+h1{margin:0 0 6px;font-size:18px}
+#status{color:#aaa;font-size:13px}
+main{padding:16px;display:grid;gap:20px}
+
+.wheel-wrap{position:relative;width:520px;height:520px;margin:auto}
+#wheel{position:absolute;inset:0;border-radius:50%;
+  background: conic-gradient(
+    #ffd66b 0deg 66.666deg,
+    #7fb7ff 66.666deg 240deg,
+    #9fffb7 240deg 353.333deg,
+    #ff9f9f 353.333deg 360deg
+  );
+  box-shadow:inset 0 0 0 30px #121214, inset 0 0 0 90px #1b1b1e, 0 6px 24px rgba(0,0,0,.4);
+  transform: rotate(0deg);
+}
+.pointer{position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:18px solid #fff;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5));
+}
+.wheel-center{position:absolute;inset:110px;border-radius:50%;background:#161618;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;border:1px solid #2a2a2d}
+#center-text{color:#bbb;font-size:16px}
+#center-timer{font-size:64px;font-weight:800}
+#center-sub{color:#bbb;font-size:16px}
+
+.info{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.chip{padding:4px 8px;border-radius:999px;border:1px solid #333;margin-left:6px}
+.chip.yellow{background:#3a3016;color:#ffd66b}
+.chip.blue{background:#203043;color:#7fb7ff}
+.chip.green{background:#1f3a27;color:#9fffb7}
+.chip.red{background:#3a2323;color:#ff9f9f}
+
+.bet .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 10px;border:1px solid #333;border-radius:10px;background:#2a2a2d;color:#eee;cursor:pointer}
+.btn.yellow{color:#ffd66b}
+.btn.blue{color:#7fb7ff}
+.btn.green{color:#9fffb7}
+.btn.red{color:#ff9f9f}
+.primary{margin-top:10px;padding:10px 16px;border:none;background:#fff;color:#111;border-radius:10px;cursor:pointer}
+
+.history-bar{display:flex;gap:8px;flex-wrap:wrap}
+.hist-box{width:28px;height:28px;border-radius:6px;border:1px solid #2a2a2d}
+
+ul{list-style:none;margin:8px 0 0;padding:0}
+li{padding:6px 8px;border:1px solid #2a2a2d;border-radius:8px;margin-bottom:6px;background:#161618}
