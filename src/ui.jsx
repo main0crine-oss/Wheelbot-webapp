@@ -1,0 +1,1 @@
+export default function App(){ return 'Wheelbot WebApp: подключи к бэкенду через VITE_API_BASE' }
