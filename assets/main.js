@@ -1,148 +1,176 @@
 
 (function(){
   const API = window.API_BASE || '';
-  const $ = (sel) => document.querySelector(sel);
-  const meEl = $('#me'), balEl = $('#balance'), wheelEl = $('#wheel'), spinBtn = $('#spinBtn');
-  const betAmount = $('#betAmount'), placeBet = $('#placeBet'), withdrawBtn = $('#withdraw');
-  const depAmount = $('#depAmount'), depositBtn = $('#deposit'), depositInfo = $('#depositInfo');
-  const betsEl = $('#bets'), spinResult = $('#spinResult');
-  const admin = $('#admin'), adminData = $('#adminData');
-
+  const $ = (s)=>document.querySelector(s);
   const initData = (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) || '';
 
-  function setWheel(segments){
-    if(!segments || !segments.length){ wheelEl.style.background = '#e2e8f0'; return; }
-    const colorMap = { blue:'#2563eb', yellow:'#f59e0b', green:'#22c55e', pink:'#ec4899' };
-    const step = 100 / segments.length;
-    let acc = 0, parts = [];
-    for(const s of segments){
-      const start = acc, end = acc + step; acc = end;
-      const hex = colorMap[s.color] || '#94a3b8';
-      parts.push(`${hex} ${start}% ${end}%`);
+  // Elements
+  const wheel = $('#wheel'); const ctx = wheel.getContext('2d');
+  const timerEl = $('#timer'); const phaseEl = $('#phase');
+  const bankEl = $('#bank'); const resultEl = $('#spinResult');
+  const balanceEl = $('#userBalance');
+  const betInput = $('#betAmount'); const betBtn = $('#betBtn');
+  const chips = document.querySelectorAll('.chip');
+  const historyEl = $('#history'); const betsEl = $('#bets');
+
+  const panel = $('#panel'); const dep = $('#dep'); const wd = $('#wd');
+  $('#depositToggle').onclick = ()=>{ panel.classList.remove('hidden'); dep.classList.remove('hidden'); wd.classList.add('hidden'); };
+  $('#withdrawToggle').onclick = ()=>{ panel.classList.remove('hidden'); wd.classList.remove('hidden'); dep.classList.add('hidden'); };
+  panel.addEventListener('click', (e)=>{ if(e.target===panel) panel.classList.add('hidden'); });
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') panel.classList.add('hidden'); });
+
+  const depAmount = $('#depAmount'), depBtn = $('#depositBtn'), depInfo = $('#depositInfo');
+  depBtn.onclick = async ()=>{
+    if(!initData){ alert('Открой из Telegram'); return; }
+    const amt = parseFloat(depAmount.value||'0');
+    const r = await fetch(`${API}/api/deposit`, {method:'POST', headers:{'Content-Type':'application/json','X-Telegram-Init-Data':initData}, body: JSON.stringify({amount_ton: amt})});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok){ alert(JSON.stringify(d)); return; }
+    depInfo.textContent = `Переведите ${d.amount_ton} TON на ${d.pay_to} с комментарием ${d.comment}\nDeeplink: ${d.deeplink}`;
+  };
+
+  const wdAddr = $('#wdAddress'), wdAmt = $('#wdAmount'), wdBtn = $('#withdrawBtn');
+  wdBtn.onclick = async ()=>{
+    if(!initData){ alert('Открой из Telegram'); return; }
+    const addr = wdAddr.value.trim(); const amt = parseFloat(wdAmt.value||'0');
+    if(!addr || !amt){ alert('Укажите адрес и сумму'); return; }
+    const r = await fetch(`${API}/api/wallet/withdraw`, {method:'POST', headers:{'Content-Type':'application/json','X-Telegram-Init-Data':initData}, body: JSON.stringify({to_address: addr, amount_ton: amt})});
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok){ alert(JSON.stringify(d)); return; }
+    alert(`Заявка принята (комиссия ${d.fee_ton} TON)`);
+  };
+
+  // State
+  let segments = [];        // from API
+  let displaySegments = []; // shuffled for UI
+  let selected = 'blue';
+  let countdown = 30; let tId = null;
+  let roundHistory = []; // client-side only
+
+  chips.forEach(btn=>{
+    btn.onclick = ()=>{
+      selected = btn.dataset.color;
+      chips.forEach(x=>x.style.outline='none');
+      btn.style.outline = '2px solid rgba(255,255,255,.4)';
+    };
+  });
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
     }
-    wheelEl.style.background = `conic-gradient(${parts.join(',')})`;
-    if(!wheelEl.querySelector('.pointer')){
-      const p = document.createElement('div');
-      p.className = 'pointer';
-      p.style.cssText = 'position:absolute;left:50%;transform:translateX(-50%);top:-14px;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:20px solid #0f172a;width:0;height:0;';
-      wheelEl.appendChild(p);
+    return a;
+  }
+
+  function drawWheel(){
+    const W = wheel.width, H = wheel.height, R = W/2;
+    ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.translate(R,R);
+    const colors = {blue:'#4f86ff', yellow:'#ffc857', green:'#22c55e', pink:'#ff6ea8'};
+    const n = (displaySegments && displaySegments.length) ? displaySegments.length : 1;
+    let ang = -Math.PI/2; const step = 2*Math.PI/n;
+    for(let i=0;i<n;i++){
+      const s = displaySegments[i] || {color:'blue'};
+      ctx.beginPath(); ctx.arc(0,0,R-12,ang,ang+step,false); ctx.lineWidth=16;
+      ctx.strokeStyle = colors[s.color] || '#334155'; ctx.stroke();
+      // divider
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo((R-20)*Math.cos(ang), (R-20)*Math.sin(ang));
+      ctx.lineWidth = 1; ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.stroke();
+      ang += step;
     }
+    // outer ring
+    ctx.beginPath(); ctx.lineWidth=14; ctx.strokeStyle='#0c152b'; ctx.arc(0,0,R-6,0,2*Math.PI); ctx.stroke();
+    ctx.restore();
+  }
+
+  function setTimer(v){ timerEl.textContent = String(v).padStart(2,'0'); }
+
+  function startTimer(){
+    clearInterval(tId);
+    countdown = 30; setTimer(countdown); phaseEl.textContent = 'Before the game starts';
+    tId = setInterval(async ()=>{
+      countdown -= 1; setTimer(Math.max(0,countdown));
+      if(countdown<=0){
+        clearInterval(tId);
+        try{ await spin(); }catch(e){}
+        startTimer();
+      }
+    }, 1000);
+  }
+
+  async function fetchJSON(url, opts={}){
+    const headers = Object.assign({'Content-Type':'application/json'}, opts.headers||{});
+    const r = await fetch(url, Object.assign({}, opts, {headers}));
+    const d = await r.json().catch(()=>({}));
+    if(!r.ok) throw d;
+    return d;
   }
 
   async function loadMeta(){
-    try{
-      const r = await fetch(`${API}/api/meta`);
-      const d = await r.json();
-      if(r.ok){ setWheel(d.segments); betAmount.min = d.limits.min_ton; betAmount.max = d.limits.max_ton; }
-    }catch(e){ console.error(e); }
-  }
-
-  async function loadState(){
-    try{
-      const r = await fetch(`${API}/api/state`);
-      const d = await r.json();
-      if(r.ok){
-        const groups = {blue:[],yellow:[],green:[],pink:[]};
-        for(const b of (d.bets || [])){ groups[b.color].push(b); }
-        betsEl.textContent =
-          `🔵: ${groups.blue.map(x=>`@${x.username||'anon'} ${x.amount_ton}`).join(', ') || '—'}\n` +
-          `🟨: ${groups.yellow.map(x=>`@${x.username||'anon'} ${x.amount_ton}`).join(', ') || '—'}\n` +
-          `🟩: ${groups.green.map(x=>`@${x.username||'anon'} ${x.amount_ton}`).join(', ') || '—'}\n` +
-          `🌸: ${groups.pink.map(x=>`@${x.username||'anon'} ${x.amount_ton}`).join(', ') || '—'}`;
-      }
-    }catch(e){ console.error(e); }
+    const d = await fetchJSON(`${API}/api/meta`);
+    segments = d.segments || [];
+    displaySegments = shuffle(segments); // хаотично на UI
+    betInput.min = d.limits?.min_ton ?? 0.1;
+    betInput.max = d.limits?.max_ton ?? 10;
+    drawWheel();
   }
 
   async function loadMe(){
     try{
-      const r = await fetch(`${API}/api/me`, { headers: { 'X-Telegram-Init-Data': initData }});
-      const d = await r.json();
-      if(r.ok){
-        meEl.textContent = `👤 @${d.username||'anon'}`;
-        balEl.textContent = `Баланс: ${(d.balance_ton||0).toFixed(3)} TON`;
-        if(d.is_admin) { admin.classList.remove('hidden'); loadAdmin(); }
-      }else{
-        meEl.textContent = '👤 гость (открой через Telegram WebApp)';
+      const d = await fetchJSON(`${API}/api/me`, { headers:{'X-Telegram-Init-Data':initData}});
+      balanceEl.textContent = `Баланс: ${(d.balance_ton||0).toFixed(3)} TON`;
+      if(d.is_admin){
+        $('#admin').classList.remove('hidden');
+        loadAdmin();
       }
-    }catch(e){
-      meEl.textContent = '👤 гость (нет initData)';
-    }
+    }catch(e){ balanceEl.textContent = 'Баланс: — (открой через Telegram)'; }
   }
 
-  async function doSpin(force){
-    const body = force ? { force_color: force } : {};
-    const r = await fetch(`${API}/api/spin`, { method:'POST',
-      headers: { 'Content-Type':'application/json', 'X-Telegram-Init-Data': initData },
-      body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    if(!r.ok){ alert(JSON.stringify(d)); return; }
-    spinResult.textContent = `Раунд #${d.round_id} · Выпал ${d.result_color} ×${d.result_mult} · Банк ${d.total_bet_ton} · Выплаты ${d.total_payout_ton}`;
+  async function loadState(){
+    const d = await fetchJSON(`${API}/api/state`);
+    bankEl.textContent = `Банк: ${d.total_bet_ton||0}`;
+    const groups = {blue:[],yellow:[],green:[],pink:[]};
+    for(const b of (d.bets||[])){ groups[b.color].push(b); }
+    const fmt = (arr)=>arr.map(x=>`@${x.username||'anon'} ${x.amount_ton}`).join(', ') || '—';
+    betsEl.textContent = `🔵 ${fmt(groups.blue)}\n🟨 ${fmt(groups.yellow)}\n🟩 ${fmt(groups.green)}\n🌸 ${fmt(groups.pink)}`;
+  }
+
+  async function placeBet(){
+    const amount = parseFloat(betInput.value||'0');
+    if(!initData){ alert('Открой из Telegram'); return; }
+    try{
+      await fetchJSON(`${API}/api/bet`, { method:'POST', headers:{'X-Telegram-Init-Data':initData}, body: JSON.stringify({color:selected, amount_ton:amount})});
+      await loadState();
+    }catch(e){ alert(JSON.stringify(e)); }
+  }
+  $('#betBtn').onclick = placeBet;
+
+  async function spin(force){
+    const d = await fetchJSON(`${API}/api/spin`, { method:'POST', headers:{'X-Telegram-Init-Data':initData}, body: JSON.stringify(force?{force_color:force}:{}) });
+    resultEl.textContent = `Раунд #${d.round_id}: ${d.result_color} ×${d.result_mult} · банк ${d.total_bet_ton} · выплаты ${d.total_payout_ton}`;
+    roundHistory.unshift({ id:d.round_id, color:d.result_color, mult:d.result_mult, bank:d.total_bet_ton, payout:d.total_payout_ton });
+    if(roundHistory.length>20) roundHistory.pop();
+    renderHistory();
     await loadState(); await loadMe();
   }
 
-  let selectedColor = 'blue';
-  document.querySelectorAll('.colors button').forEach(btn => {
-    btn.addEventListener('click', () => {
-      selectedColor = btn.dataset.color;
-      document.querySelectorAll('.colors button').forEach(b=> b.style.outline = '');
-      btn.style.outline = '2px solid #0f172a';
-    });
-  });
-
-  spinBtn.addEventListener('click', () => doSpin());
-
-  placeBet.addEventListener('click', async () => {
-    const amt = parseFloat(betAmount.value);
-    if(!initData){ alert('Открой WebApp из Telegram бота, чтобы авторизоваться'); return; }
-    const r = await fetch(`${API}/api/bet`, { method:'POST',
-      headers: { 'Content-Type':'application/json', 'X-Telegram-Init-Data': initData },
-      body: JSON.stringify({ color: selectedColor, amount_ton: amt })
-    });
-    const d = await r.json().catch(()=>({}));
-    if(!r.ok){ alert(JSON.stringify(d)); return; }
-    await loadState();
-  });
-
-  withdrawBtn.addEventListener('click', async () => {
-    if(!initData){ alert('Открой WebApp из Telegram бота, чтобы авторизоваться'); return; }
-    const addr = prompt('TON-адрес (EQ...)', '');
-    const amt  = parseFloat(prompt('Сумма (мин. 1.5; комиссия 0.05 удержится)', '1.5')||'0');
-    if(!addr || !amt) return;
-    const r = await fetch(`${API}/api/wallet/withdraw`, { method:'POST',
-      headers: { 'Content-Type':'application/json', 'X-Telegram-Init-Data': initData },
-      body: JSON.stringify({ to_address: addr, amount_ton: amt })
-    });
-    const d = await r.json().catch(()=>({}));
-    if(!r.ok){ alert(JSON.stringify(d)); return; }
-    alert('Заявка принята. Комиссия 0.05 TON');
-    await loadMe();
-  });
-
-  depositBtn.addEventListener('click', async () => {
-    const amt = parseFloat(depAmount.value);
-    if(!initData){ alert('Открой WebApp из Telegram бота, чтобы авторизоваться'); return; }
-    const r = await fetch(`${API}/api/deposit`, { method:'POST',
-      headers: { 'Content-Type':'application/json', 'X-Telegram-Init-Data': initData },
-      body: JSON.stringify({ amount_ton: amt })
-    });
-    const d = await r.json();
-    if(!r.ok){ alert(JSON.stringify(d)); return; }
-    depositInfo.textContent = `Отправьте ${d.amount_ton} TON на ${d.pay_to} c комментарием ${d.comment}\nDeeplink: ${d.deeplink}`;
-  });
+  function renderHistory(){
+    historyEl.innerHTML = '';
+    for(const h of roundHistory){
+      const row = document.createElement('div');
+      row.className = 'hist-row';
+      row.innerHTML = `<span>#${h.id} · банк ${h.bank}</span><span class="tag ${h.color}">×${h.mult}</span>`;
+      historyEl.appendChild(row);
+    }
+  }
 
   async function loadAdmin(){
     try{
-      const r = await fetch(`${API}/api/admin/overview`, { headers: { 'X-Telegram-Init-Data': initData }});
-      const d = await r.json();
-      if(!r.ok){ return; }
-      adminData.textContent =
-        'Пользователи:\n' + d.users.map(u=>`#${u.id} @${u.username||'anon'} · {{balance:${u.balance_ton}}}`).join('\n') +
-        '\n\nСтавки открытого раунда:\n' + d.open_bets.map(b=>`#${b.id} @${b.username} ${b.color} {{amt:${b.amount_ton}}}`).join('\n') +
-        '\n\nПоследние раунды:\n' + d.last_rounds.map(r=>`#${r.id} {{res:${r.result_color}×${r.result_mult}}} bank:${r.total_bet_ton} payout:${r.total_payout_ton}`).join('\n');
-      document.querySelectorAll('.force').forEach(btn => {
-        btn.onclick = () => doSpin(btn.dataset.c);
-      });
+      const d = await fetchJSON(`${API}/api/admin/overview`, { headers:{'X-Telegram-Init-Data':initData} });
+      $('#adminData').textContent = 'Пользователи:\\n' + d.users.map(u=>`#${u.id} @${u.username||'anon'} · balance:${u.balance_ton}`).join('\\n');
+      document.querySelectorAll('[data-force]').forEach(b=> b.onclick = ()=> spin(b.dataset.force));
     }catch(e){}
   }
 
@@ -150,6 +178,7 @@
     await loadMeta();
     await loadState();
     await loadMe();
+    startTimer();
   }
   boot();
 })();

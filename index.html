@@ -3,79 +3,98 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Wheelbot WebApp</title>
+  <title>Wheel — Global 30s</title>
   <link rel="stylesheet" href="./assets/style.css"/>
-  <script>window.API_BASE = "https://wheelbot-api321.onrender.com";</script>
+  <script>window.API_BASE="https://wheelbot-api321.onrender.com";</script>
 </head>
 <body>
-  <div class="container">
-    <header class="topbar">
-      <h1>🎡 Wheelbot WebApp</h1>
-      <div class="status">
-        <span id="me">👤 …</span>
-        <span id="balance"></span>
-      </div>
+  <div class="wrap">
+    <header class="top">
+      <div class="brand">🎡 Wheel — Global 30s</div>
+      <div class="spacer"></div>
+      <div id="userBalance" class="balance">Баланс: —</div>
+      <button id="depositToggle" class="icon up" title="Пополнить">▲</button>
+      <button id="withdrawToggle" class="icon down" title="Вывести">▼</button>
     </header>
 
-    <section class="grid">
-      <div class="card">
-        <h2>Колесо</h2>
-        <p class="muted">26×🔵×2 · 10×🟨×4 · 17×🟩×3 · 1×🌸×30</p>
-        <div id="wheel" class="wheel"></div>
-        <div class="actions">
-          <button id="spinBtn">Крутить</button>
+    <section class="main">
+      <div class="left">
+        <div class="donut">
+          <canvas id="wheel" width="320" height="320"></canvas>
+          <div class="center">
+            <div id="phase" class="muted">Before the game starts</div>
+            <div id="timer" class="big">30</div>
+            <div class="muted small">seconds</div>
+          </div>
+          <div class="pointer"></div>
         </div>
-        <div id="spinResult" class="result"></div>
+
+        <div class="meta-row">
+          <div id="bank" class="muted">Банк: 0</div>
+          <div class="muted">Коэфф.: <span class="pill pill-yellow">x4</span> <span class="pill pill-blue">x2</span> <span class="pill pill-green">x3</span> <span class="pill pill-pink">x30</span></div>
+        </div>
+
+        <div class="chips">
+          <button class="chip blue"   data-color="blue"   data-mult="2">Синий · ×2</button>
+          <button class="chip yellow" data-color="yellow" data-mult="4">Жёлтый · ×4</button>
+          <button class="chip green"  data-color="green"  data-mult="3">Зелёный · ×3</button>
+          <button class="chip pink"   data-color="pink"   data-mult="30">Розовый · ×30</button>
+        </div>
+
+        <div class="betline">
+          <input id="betAmount" type="number" step="0.1" min="0.1" value="0.1" class="bet-input" placeholder="Сумма TON"/>
+          <button id="betBtn" class="btn primary">Сделать ставку</button>
+        </div>
+
+        <div id="spinResult" class="result muted"></div>
       </div>
 
-      <div class="card">
-        <h2>Ставка и кошелёк</h2>
-        <div class="row">
-          <label>Сумма (TON)<input id="betAmount" type="number" step="0.1" value="0.1"/></label>
+      <div class="right">
+        <div class="card">
+          <h3>История раундов</h3>
+          <div id="history" class="history"></div>
         </div>
-        <div class="row colors">
-          <button data-color="blue">🔵 Синий ×2</button>
-          <button data-color="yellow">🟨 Жёлтый ×4</button>
-          <button data-color="green">🟩 Зелёный ×3</button>
-          <button data-color="pink">🌸 Розовый ×30</button>
+        <div class="card">
+          <h3>Ставки текущего раунда</h3>
+          <pre id="bets" class="mono list small"></pre>
         </div>
-        <div class="row">
-          <button id="placeBet">Добавить ставку</button>
-          <button id="withdraw">Вывод TON</button>
+        <div id="admin" class="card hidden">
+          <h3>🛠 Админ</h3>
+          <div class="row">
+            <button class="btn ghost" data-force="blue">Форс 🔵</button>
+            <button class="btn ghost" data-force="yellow">Форс 🟨</button>
+            <button class="btn ghost" data-force="green">Форс 🟩</button>
+            <button class="btn ghost" data-force="pink">Форс 🌸</button>
+          </div>
+          <pre id="adminData" class="mono small muted"></pre>
         </div>
+      </div>
+    </section>
 
-        <div class="card-sub">
+    <div id="panel" class="panel hidden">
+      <div class="panel-inner">
+        <div id="dep" class="panel-block hidden">
           <h3>Пополнить TON</h3>
           <div class="row">
-            <label>Сумма (TON)<input id="depAmount" type="number" step="0.1" value="1"/></label>
-            <button id="deposit">Сгенерировать реквизиты</button>
+            <input id="depAmount" type="number" step="0.1" min="0.1" value="1.0" class="input" placeholder="Сумма TON"/>
+            <button id="depositBtn" class="btn">Сгенерировать</button>
           </div>
-          <div id="depositInfo" class="mono"></div>
+          <pre id="depositInfo" class="mono small muted"></pre>
         </div>
-
-        <div class="card-sub">
-          <h3>Ставки текущего раунда</h3>
-          <div id="bets" class="mono small"></div>
+        <div id="wd" class="panel-block hidden">
+          <h3>Вывод TON</h3>
+          <div class="row">
+            <input id="wdAddress" class="input" placeholder="TON адрес (EQ...)"/>
+            <input id="wdAmount"  type="number" step="0.1" min="1.5" value="1.5" class="input" placeholder="Сумма (мин. 1.5)"/>
+            <button id="withdrawBtn" class="btn">Отправить</button>
+          </div>
+          <div class="muted small">Комиссия 0.05 TON удерживается при выводе</div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section id="admin" class="card hidden">
-      <h2>🛠 Админ-панель</h2>
-      <div class="row">
-        <button class="force" data-c="blue">🔵 Форс синий</button>
-        <button class="force" data-c="yellow">🟨 Форс жёлтый</button>
-        <button class="force" data-c="green">🟩 Форс зелёный</button>
-        <button class="force" data-c="pink">🌸 Форс розовый</button>
-      </div>
-      <div id="adminData" class="mono small"></div>
-    </section>
-
-    <footer class="muted">
-      Открой из Telegram-бота, чтобы прошла авторизация WebApp (initData).
-    </footer>
+    <footer class="foot muted tiny">Открывай из Telegram WebApp для авторизации (initData).</footer>
   </div>
-
   <script src="./assets/main.js"></script>
 </body>
 </html>
